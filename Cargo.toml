@@ -1,0 +1,15 @@
+[package]
+name = "xtensa2arm"
+version = "0.1.0"
+authors = ["Vlad Ivanov <vlad@ivanov.email>"]
+
+[[bin]]
+name = "xtensa2arm"
+path = "src/main.rs"
+
+[dependencies]
+rustc-serialize = "0.3"
+clap = "2"
+
+[dependencies.r2pipe]
+git = "https://github.com/radare/r2pipe.rs"
