@@ -8,25 +8,53 @@ mod object_storage;
 
 use r2pipe::R2Pipe;
 use object_storage::{Object, ObjectKind, ObjectStorage};
+use clap::{Arg, SubCommand};
 use std::option::Option;
 
 #[derive(Default)]
 struct App {
     objects: ObjectStorage,
-    pipe: Box<Option<R2Pipe>>
+    pipe: Box<Option<R2Pipe>>,
+    input: String,
 }
 
 impl App {
-    fn get_pipe<'a>(&'a mut self) -> &'a R2Pipe {
-        self.pipe.as_mut().as_mut().unwrap()
-    }
-
     pub fn new() -> App {
         Default::default()
     }
 
-    pub fn run(&mut self) {
+    fn symbols_read(&mut self) {
+        println!("read symbols");
+    }
 
+    fn pipe_create(&mut self) {
+        let input = self.input.to_string();
+        self.pipe = Box::new(Some(R2Pipe::spawn(input, None).unwrap()));
+    }
+
+    fn pipe_get<'a>(&'a mut self) -> &'a mut R2Pipe {
+        self.pipe.as_mut().as_mut().unwrap()
+    }
+
+    fn pipe_close(&mut self) {
+        self.pipe_get().close();
+    }
+
+    pub fn run(&mut self) {
+        let args = clap::App::new("xtensa2arm")
+            .version("0.1")
+            .arg(Arg::with_name("input")
+                .short("i")
+                .long("input")
+                .value_name("FILE")
+                .required(true))
+            .get_matches();
+
+        self.input = args.value_of("input").unwrap().to_string();
+
+        self.pipe_create();
+        self.symbols_read();
+        self.pipe_close();
     }
 }
 
