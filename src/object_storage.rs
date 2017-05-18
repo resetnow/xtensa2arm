@@ -31,9 +31,14 @@ pub struct ObjectStorage {
 /// and provides methods to look up objects by
 /// address
 impl ObjectStorage {
+	/// Returns current number of objects
+	pub fn len(&self) -> usize {
+		self.objects.len()
+	}
+
 	/// Takes Json output from radare2
 	/// and populates object array
-	pub fn from_json(mut self, json: json::Json) {
+	pub fn from_json(&mut self, json: json::Json) {
 		let array = json.into_array().unwrap();
 
 		for element in &array {

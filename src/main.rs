@@ -24,10 +24,15 @@ impl App {
     }
 
     fn symbols_read(&mut self) {
-        println!("read symbols");
+        let symbols = self.pipe_get().cmdj("isj").unwrap();
+        self.objects.from_json(symbols);
+
+        println!("Read symbols: {:?}", self.objects.len());
     }
 
     fn pipe_create(&mut self) {
+        println!("Opening r2pipe");
+
         let input = self.input.to_string();
         self.pipe = Box::new(Some(R2Pipe::spawn(input, None).unwrap()));
     }
@@ -37,6 +42,7 @@ impl App {
     }
 
     fn pipe_close(&mut self) {
+        println!("Closing r2pipe");
         self.pipe_get().close();
     }
 
