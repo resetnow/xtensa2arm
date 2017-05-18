@@ -15,7 +15,6 @@ use std::option::Option;
 struct App {
     objects: ObjectStorage,
     pipe: Box<Option<R2Pipe>>,
-    input: String,
 }
 
 impl App {
@@ -30,11 +29,11 @@ impl App {
         println!("Read symbols: {:?}", self.objects.len());
     }
 
-    fn pipe_create(&mut self) {
+    fn pipe_create(&mut self, input: &str) {
         println!("Opening r2pipe");
 
-        let input = self.input.to_string();
-        self.pipe = Box::new(Some(R2Pipe::spawn(input, None).unwrap()));
+        let spawn_input = input.to_string();
+        self.pipe = Box::new(Some(R2Pipe::spawn(spawn_input, None).unwrap()));
     }
 
     fn pipe_get<'a>(&'a mut self) -> &'a mut R2Pipe {
@@ -56,9 +55,9 @@ impl App {
                 .required(true))
             .get_matches();
 
-        self.input = args.value_of("input").unwrap().to_string();
+        let input = args.value_of("input").unwrap().to_string();
 
-        self.pipe_create();
+        self.pipe_create(&input);
         self.symbols_read();
         self.pipe_close();
     }
