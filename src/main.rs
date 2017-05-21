@@ -5,15 +5,27 @@ extern crate rustc_serialize;
 extern crate clap;
 
 mod object_storage;
+mod function;
+mod assembly;
+mod translation;
 
 use r2pipe::R2Pipe;
+
+use function::{Function};
 use object_storage::{Object, ObjectKind, ObjectStorage};
+use translation::xtensa_arm::Translator;
+
 use clap::{Arg, SubCommand};
+
+use std::cell::{RefCell, RefMut};
+use std::rc::Rc;
 use std::option::Option;
+use std::boxed::Box;
 
 #[derive(Default)]
 struct App {
     objects: ObjectStorage,
+    functions: Vec<Function>,
     pipe: Box<Option<R2Pipe>>,
 }
 
@@ -27,6 +39,24 @@ impl App {
         self.objects.from_json(symbols);
 
         println!("Read symbols: {:?}", self.objects.len());
+    }
+
+    fn analyze(&mut self) {
+        self.pipe_get().cmd("aa").unwrap();
+    }
+
+    fn functions_create(&mut self) {
+        let names = vec!["sdk_rom_i2c_writeReg"];
+
+        for function in &names {
+            let mut f = Function::new();
+            let command = format!("pdfj @ sym.{:}", function);
+            let json = self.pipe_get().cmdj(&command).unwrap();
+
+            f.from_json(json);
+
+            self.functions.push(f);
+        }
     }
 
     fn pipe_create(&mut self, input: &str) {
@@ -56,9 +86,12 @@ impl App {
             .get_matches();
 
         let input = args.value_of("input").unwrap().to_string();
+        let mut translator = Translator::new();
 
         self.pipe_create(&input);
+        self.analyze();
         self.symbols_read();
+        self.functions_create();
         self.pipe_close();
     }
 }
