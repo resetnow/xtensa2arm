@@ -54,8 +54,17 @@ impl App {
             let json = self.pipe_get().cmdj(&command).unwrap();
 
             f.from_json(json);
+            f.name = function.to_string();
 
             self.functions.push(f);
+        }
+    }
+
+    fn functions_translate(&mut self) {
+        let mut translator = Translator::new();
+
+        for function in &mut self.functions {
+            translator.translate(function);
         }
     }
 
@@ -86,17 +95,17 @@ impl App {
             .get_matches();
 
         let input = args.value_of("input").unwrap().to_string();
-        let mut translator = Translator::new();
 
         self.pipe_create(&input);
         self.analyze();
         self.symbols_read();
         self.functions_create();
+        self.functions_translate();
         self.pipe_close();
     }
 }
 
 fn main() {
     let mut app: App = App::new();
-    app.run(); 
+    app.run();
 }

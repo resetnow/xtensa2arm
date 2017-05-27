@@ -4,7 +4,7 @@ use std::option::Option;
 use rustc_serialize::json;
 
 pub enum ObjectKind {
-	Object { 
+	Object {
 		/// Object data (from .data, .rodata or .bss)
 		data: Vec<u8>,
 		/// Whether or not this object was already
@@ -43,7 +43,7 @@ impl ObjectStorage {
 
 		for element in &array {
 			let json_object = element.as_object().unwrap();
-			let mut binary_object = Object { 
+			let mut binary_object = Object {
 				address: 0,
 				size: 0,
 				name: Default::default(),
@@ -70,12 +70,12 @@ impl ObjectStorage {
 				}
     		}
 
-			self.objects.push(binary_object)		
+			self.objects.push(binary_object)
 		}
 
 		// TODO sort
 	}
-	
+
 	/// Searches for an object at the provided address
 	/// and returns a reference if found
 	pub fn get_object<'a>(&'a self, address: u32) -> Option<&'a Object> {
