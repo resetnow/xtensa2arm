@@ -21,11 +21,15 @@ use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 use std::option::Option;
 use std::boxed::Box;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
 
 #[derive(Default)]
 struct App {
     objects: ObjectStorage,
-    functions: Vec<Function>,
+    functions_in: Vec<Function>,
+    functions_out: Vec<Function>,
     pipe: Box<Option<R2Pipe>>,
 }
 
@@ -56,15 +60,17 @@ impl App {
             f.from_json(json);
             f.name = function.to_string();
 
-            self.functions.push(f);
+            self.functions_in.push(f);
         }
     }
 
     fn functions_translate(&mut self) {
         let mut translator = Translator::new();
+        let mut pipe = self.pipe.as_mut().as_mut().unwrap();
 
-        for function in &mut self.functions {
-            translator.translate(function);
+        for function in &mut self.functions_in {
+            let function = translator.translate(function, pipe);
+            self.functions_out.push(function);
         }
     }
 
@@ -84,6 +90,42 @@ impl App {
         self.pipe_get().close();
     }
 
+    fn output_write(&self) {
+        let mut file = match File::create("result.S") {
+            Err(why) => panic!("Couldn't open output file: {}", why.description()),
+            Ok(file) => file,
+        };
+
+        let includes = vec!["esp8266.S"];
+
+        for include in &includes {
+            let s = format!("#include \"{:}\"\n", include);
+            file.write(s.as_bytes()).unwrap();
+        }
+
+        for function in &self.functions_out {
+            let header = format!(
+                "\n\n\
+                .global {:};\n\
+                {:}:\n",
+                function.name, function.name
+            );
+
+            file.write(header.as_bytes()).unwrap();
+
+            for instruction in &function.instructions {
+                if instruction.referenced {
+                    let reference = format!("loc_{:x}:\n", instruction.offset);
+                    file.write(reference.as_bytes()).unwrap();
+                }
+
+                file.write("\t".as_bytes()).unwrap();
+                file.write(instruction.opcode.as_bytes()).unwrap();
+                file.write("\n".as_bytes()).unwrap();
+            }
+        }
+    }
+
     pub fn run(&mut self) {
         let args = clap::App::new("xtensa2arm")
             .version("0.1")
@@ -101,6 +143,7 @@ impl App {
         self.symbols_read();
         self.functions_create();
         self.functions_translate();
+        self.output_write();
         self.pipe_close();
     }
 }

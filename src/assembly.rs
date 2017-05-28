@@ -8,7 +8,7 @@ pub enum InstructionKind {
 }
 
 pub enum InstructionArch {
-    Xtensa(XtensaInstruction),
+    Xtensa,
     Arm,
     Other,
 }
@@ -28,6 +28,7 @@ pub struct Instruction {
     pub opcode: String,
     pub kind: InstructionKind,
     pub arch: InstructionArch,
+    pub referenced: bool,
 }
 
 impl Instruction {

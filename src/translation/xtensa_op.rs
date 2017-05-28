@@ -5,7 +5,7 @@ use translation::xtensa_operand::{XtensaOperand, XtensaOperandKind};
 /// Narrow versions are assigned same
 /// enum values as wide — it doesn't
 /// affect translation in any way
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum XtensaOpcode {
     Add, Addi, And, Sub,
     Or, Slli, Slri,
@@ -24,8 +24,8 @@ pub enum XtensaOpcode {
 /// Holds xtensa opcode and operands
 #[derive(Default, PartialEq)]
 pub struct XtensaInstruction {
-    opcode: XtensaOpcode,
-    operands: Vec<XtensaOperand>,
+    pub opcode: XtensaOpcode,
+    pub operands: Vec<XtensaOperand>,
 }
 
 /// Helper struct used to parse assembly tokens
@@ -65,8 +65,8 @@ impl InstructionBuilder {
             "s32i" | "s32i.n" => op!(S32i,  [ Reg, Reg, Imm ]),
             "slli"            => op!(Slli,  [ Reg, Reg, Imm ]),
             "slri"            => op!(Slri,  [ Reg, Reg, Imm ]),
-            "bbsi"            => op!(Bbsi,  [ Reg, Reg, Imm ]),
-            "bbci"            => op!(Bbci,  [ Reg, Reg, Imm ]),
+            "bbsi"            => op!(Bbsi,  [ Reg, Imm, Imm ]),
+            "bbci"            => op!(Bbci,  [ Reg, Imm, Imm ]),
             "memw"            => op!(Memw,  []),
             _ => { panic!("Opcode not supported: {:?}", opcode); }
         }

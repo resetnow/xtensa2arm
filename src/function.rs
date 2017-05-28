@@ -2,7 +2,7 @@ use std::vec::Vec;
 use std::default::Default;
 
 use rustc_serialize::json;
-use assembly::{Instruction, InstructionKind};
+use assembly::{Instruction, InstructionKind, InstructionArch};
 
 #[derive(Default)]
 pub struct Function {
@@ -44,6 +44,7 @@ impl Function {
                 }
             }
 
+            instruction.arch = InstructionArch::Xtensa;
             self.instructions.push(instruction);
         }
     }
