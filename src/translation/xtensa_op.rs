@@ -8,7 +8,8 @@ use translation::xtensa_operand::{XtensaOperand, XtensaOperandKind};
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum XtensaOpcode {
     Add, Addi, And, Sub,
-    Or, Slli, Slri,
+    Or, Slli, Slri, Srai,
+    Mov, Movi,
     // Flow control
     Bbsi, Bbci, Ret,
     // Memory sync barrier
@@ -16,6 +17,8 @@ pub enum XtensaOpcode {
     // Load operations
     L32r, L32i, L16ui,
     L16si, L8ui,
+    // Calls
+    Call0, Callx0,
     // Store operations
     S32i,
     Other,
@@ -65,8 +68,13 @@ impl InstructionBuilder {
             "s32i" | "s32i.n" => op!(S32i,  [ Reg, Reg, Imm ]),
             "slli"            => op!(Slli,  [ Reg, Reg, Imm ]),
             "slri"            => op!(Slri,  [ Reg, Reg, Imm ]),
+            "srai"            => op!(Srai,  [ Reg, Reg, Imm ]),
             "bbsi"            => op!(Bbsi,  [ Reg, Imm, Imm ]),
             "bbci"            => op!(Bbci,  [ Reg, Imm, Imm ]),
+            "addi"            => op!(Addi,  [ Reg, Reg, Imm ]),
+            "mov" | "mov.n"   => op!(Mov,   [ Reg, Reg ]),
+            "movi" | "movi.n" => op!(Movi,  [ Reg, Imm ]),
+            "callx0"          => op!(Callx0,[ Reg ]),
             "memw"            => op!(Memw,  []),
             _ => { panic!("Opcode not supported: {:?}", opcode); }
         }

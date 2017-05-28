@@ -66,6 +66,8 @@ impl Translator {
         let opcode = match instruction.opcode {
             XtensaOpcode::Slri => "lsr",
             XtensaOpcode::Slli => "lsl",
+            XtensaOpcode::Addi => "add",
+            XtensaOpcode::Srai => "asr",
             _ => panic!()
         };
 
@@ -115,7 +117,7 @@ impl Translator {
         let command = format!("pxwj 32 @ 0x{:x}", address);
         let json_array = pipe.cmdj(&command).unwrap();
         let array = json_array.as_array().unwrap();
-        let data = array[0].as_u64().unwrap() as u32;
+        let data = array[0].as_i64().unwrap() as u32;
 
         format!("ldr {:}, =0x{:x}", reg, data)
     }
@@ -130,6 +132,26 @@ impl Translator {
         "".to_string()
     }
 
+    fn emit_mov(&self, instruction: &XtensaInstruction) -> String {
+        let r1 = self.arm_reg(instruction.operands[0].get_reg());
+        let r2 = self.arm_reg(instruction.operands[1].get_reg());
+
+        format!("mov {:}, {:}", r1, r2)
+    }
+
+    fn emit_movi(&self, instruction: &XtensaInstruction) -> String {
+        let r1 = self.arm_reg(instruction.operands[0].get_reg());
+        let i1 = instruction.operands[1].get_imm();
+
+        format!("ldr {:}, =0x{:x}", r1, i1 as u32)
+    }
+
+    fn emit_reg_call(&self, instruction: &XtensaInstruction) -> String {
+        let r1 = self.arm_reg(instruction.operands[0].get_reg());
+
+        format!("blx {:}", r1)
+    }
+
     fn translate_instruction(&self, i: &mut Instruction, xtensa_i: &XtensaInstruction,
             refs: &mut BTreeSet<u32>, pipe: &mut R2Pipe) {
         let op = match xtensa_i.opcode {
@@ -139,13 +161,18 @@ impl Translator {
             XtensaOpcode::Or => { self.emit_r3(xtensa_i) }
             XtensaOpcode::L32i |
             XtensaOpcode::S32i => { self.emit_load_store(xtensa_i) }
+            XtensaOpcode::Addi |
             XtensaOpcode::Slli |
-            XtensaOpcode::Slri => { self.emit_r2_i1(xtensa_i) }
+            XtensaOpcode::Slri |
+            XtensaOpcode::Srai => { self.emit_r2_i1(xtensa_i) }
             XtensaOpcode::Bbci |
             XtensaOpcode::Bbsi => { branch!(self.emit_branch_bit(xtensa_i), refs) }
             XtensaOpcode::L32r => { self.emit_load_relative(xtensa_i, pipe) }
             XtensaOpcode::Ret => { self.emit_ret() }
             XtensaOpcode::Memw => { self.emit_memw() }
+            XtensaOpcode::Mov => { self.emit_mov(xtensa_i) }
+            XtensaOpcode::Movi => { self.emit_movi(xtensa_i) }
+            XtensaOpcode::Callx0 => { self.emit_reg_call(xtensa_i) }
             _ => { panic!("translate_instruction: opcode not supported: {:?}", xtensa_i.opcode) }
         };
 
