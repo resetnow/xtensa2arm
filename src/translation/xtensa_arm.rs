@@ -1,6 +1,7 @@
 use std::vec::Vec;
 use std::collections::BTreeSet;
 
+use object_storage::{Object, ObjectKind, ObjectStorage};
 use assembly::{Instruction, InstructionKind, InstructionArch, ParseInstruction, Operand};
 use translation::xtensa_op::{XtensaOpcode, XtensaInstruction};
 use translation::xtensa_operand::XtensaOperand;
@@ -9,7 +10,7 @@ use r2pipe::R2Pipe;
 
 #[derive(Default)]
 pub struct Translator {
-    pub referenced_objects: Vec<u32>,
+    pub referenced_objects: BTreeSet<u32>,
     pub functions: Vec<Function>,
 }
 
@@ -82,6 +83,7 @@ impl Translator {
     fn emit_load_store(&self, instruction: &XtensaInstruction) -> String {
         let opcode = match instruction.opcode {
             XtensaOpcode::L32i => "ldr",
+            XtensaOpcode::L8ui => "ldrb",
             XtensaOpcode::S32i => "str",
             _ => panic!()
         };
@@ -152,27 +154,51 @@ impl Translator {
         format!("blx {:}", r1)
     }
 
-    fn translate_instruction(&self, i: &mut Instruction, xtensa_i: &XtensaInstruction,
-            refs: &mut BTreeSet<u32>, pipe: &mut R2Pipe) {
+    fn emit_call(&self, instruction: &XtensaInstruction, objects: &mut ObjectStorage) -> String {
+        let jt = instruction.operands[0].get_imm() as u32;
+        let ref object = match objects.get_object(jt) {
+            Some(o) => o,
+            None => panic!("Unable to resolve call address")
+        };
+
+        match object.kind {
+            ObjectKind::Function => {},
+            _ => panic!("Called object is not a function")
+        }
+
+        format!("bl {:}", object.name)
+    }
+
+    fn emit_jmp(&self, instruction: &XtensaInstruction) -> (String, u32) {
+        let jt = instruction.operands[0].get_imm() as u32;
+
+        ( format!("b loc_{:x}", jt), jt )
+    }
+
+    fn translate_instruction(&mut self, i: &mut Instruction, xtensa_i: &XtensaInstruction,
+            refs: &mut BTreeSet<u32>, pipe: &mut R2Pipe, objects: &mut ObjectStorage) {
         let op = match xtensa_i.opcode {
             XtensaOpcode::Add |
             XtensaOpcode::Sub |
             XtensaOpcode::And |
             XtensaOpcode::Or => { self.emit_r3(xtensa_i) }
             XtensaOpcode::L32i |
-            XtensaOpcode::S32i => { self.emit_load_store(xtensa_i) }
+            XtensaOpcode::S32i |
+            XtensaOpcode::L8ui => { self.emit_load_store(xtensa_i) }
             XtensaOpcode::Addi |
             XtensaOpcode::Slli |
             XtensaOpcode::Slri |
             XtensaOpcode::Srai => { self.emit_r2_i1(xtensa_i) }
             XtensaOpcode::Bbci |
             XtensaOpcode::Bbsi => { branch!(self.emit_branch_bit(xtensa_i), refs) }
+            XtensaOpcode::Jmp => { branch!(self.emit_jmp(xtensa_i), refs) }
             XtensaOpcode::L32r => { self.emit_load_relative(xtensa_i, pipe) }
             XtensaOpcode::Ret => { self.emit_ret() }
             XtensaOpcode::Memw => { self.emit_memw() }
             XtensaOpcode::Mov => { self.emit_mov(xtensa_i) }
             XtensaOpcode::Movi => { self.emit_movi(xtensa_i) }
             XtensaOpcode::Callx0 => { self.emit_reg_call(xtensa_i) }
+            XtensaOpcode::Call0 => { self.emit_call(xtensa_i, objects) }
             _ => { panic!("translate_instruction: opcode not supported: {:?}", xtensa_i.opcode) }
         };
 
@@ -183,7 +209,7 @@ impl Translator {
         Default::default()
     }
 
-    pub fn translate(&mut self, function: &mut Function, pipe: &mut R2Pipe) -> Function {
+    pub fn translate(&mut self, function: &mut Function, pipe: &mut R2Pipe, objects: &mut ObjectStorage) -> Function {
         let mut result = Function::new();
         let mut refs = BTreeSet::<u32>::new();
 
@@ -193,7 +219,8 @@ impl Translator {
 
             xtensa_instruction.from_str(&instruction.opcode);
 
-            self.translate_instruction(&mut result_instruction, &xtensa_instruction, &mut refs, pipe);
+            self.translate_instruction(&mut result_instruction, &xtensa_instruction,
+                &mut refs, pipe, objects);
 
             result_instruction.offset = instruction.offset;
             result_instruction.arch = InstructionArch::Arm;

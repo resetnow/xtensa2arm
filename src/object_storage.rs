@@ -12,14 +12,14 @@ pub enum ObjectKind {
 		read: bool
 	},
 	Function,
-	Unknown
+	Unknown,
 }
 
 pub struct Object {
-	address: u32,
-	size: u32,
-	name: String,
-	kind: ObjectKind
+	pub address: u32,
+	pub size: u32,
+	pub name: String,
+	pub kind: ObjectKind,
 }
 
 #[derive(Default)]

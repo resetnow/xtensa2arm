@@ -11,7 +11,7 @@ pub enum XtensaOpcode {
     Or, Slli, Slri, Srai,
     Mov, Movi,
     // Flow control
-    Bbsi, Bbci, Ret,
+    Bbsi, Bbci, Ret, Jmp,
     // Memory sync barrier
     Memw,
     // Load operations
@@ -63,6 +63,7 @@ impl InstructionBuilder {
             "ret"  | "ret.n"  => op!(Ret,   []),
             "l32i" | "l32i.n" => op!(L32i,  [ Reg, Reg, Imm ]),
             "l32r"            => op!(L32r,  [ Reg, Imm ]),
+            "l8ui"            => op!(L8ui,  [ Reg, Reg, Imm ]),
             "l16ui"           => op!(L16ui, [ Reg, Reg, Imm ]),
             "l16si"           => op!(L16si, [ Reg, Reg, Imm ]),
             "s32i" | "s32i.n" => op!(S32i,  [ Reg, Reg, Imm ]),
@@ -74,7 +75,9 @@ impl InstructionBuilder {
             "addi"            => op!(Addi,  [ Reg, Reg, Imm ]),
             "mov" | "mov.n"   => op!(Mov,   [ Reg, Reg ]),
             "movi" | "movi.n" => op!(Movi,  [ Reg, Imm ]),
+            "call0"           => op!(Call0, [ Imm ]),
             "callx0"          => op!(Callx0,[ Reg ]),
+            "j"               => op!(Jmp,   [ Imm ]),
             "memw"            => op!(Memw,  []),
             _ => { panic!("Opcode not supported: {:?}", opcode); }
         }
