@@ -67,9 +67,10 @@ impl App {
     fn functions_translate(&mut self) {
         let mut translator = Translator::new();
         let mut pipe = self.pipe.as_mut().as_mut().unwrap();
+        let ref mut objects = self.objects;
 
         for function in &mut self.functions_in {
-            let function = translator.translate(function, pipe);
+            let function = translator.translate(function, pipe, objects);
             self.functions_out.push(function);
         }
     }

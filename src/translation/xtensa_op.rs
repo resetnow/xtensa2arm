@@ -9,14 +9,15 @@ use translation::xtensa_operand::{XtensaOperand, XtensaOperandKind};
 pub enum XtensaOpcode {
     Add, Addi, And, Sub,
     Or, Slli, Slri, Srai,
-    Mov, Movi,
+    Mov, Movi, Addx2, Addx4,
+    Addx8,
     // Flow control
     Bbsi, Bbci, Ret, Jmp,
     // Memory sync barrier
     Memw,
     // Load operations
     L32r, L32i, L16ui,
-    L16si, L8ui,
+    L16si, L8ui, S8i,
     // Calls
     Call0, Callx0,
     // Store operations
@@ -60,6 +61,9 @@ impl InstructionBuilder {
             "or"   | "or.n"   => op!(Or,    [ Reg, Reg, Reg ]),
             "add"  | "add.n"  => op!(Add,   [ Reg, Reg, Reg ]),
             "sub"  | "sub.n"  => op!(Sub,   [ Reg, Reg, Reg ]),
+            "addx2"           => op!(Addx2, [ Reg, Reg, Reg ]),
+            "addx4"           => op!(Addx4, [ Reg, Reg, Reg ]),
+            "addx8"           => op!(Addx8, [ Reg, Reg, Reg ]),
             "ret"  | "ret.n"  => op!(Ret,   []),
             "l32i" | "l32i.n" => op!(L32i,  [ Reg, Reg, Imm ]),
             "l32r"            => op!(L32r,  [ Reg, Imm ]),
@@ -67,6 +71,7 @@ impl InstructionBuilder {
             "l16ui"           => op!(L16ui, [ Reg, Reg, Imm ]),
             "l16si"           => op!(L16si, [ Reg, Reg, Imm ]),
             "s32i" | "s32i.n" => op!(S32i,  [ Reg, Reg, Imm ]),
+            "s8i"             => op!(S8i,   [ Reg, Reg, Imm ]),
             "slli"            => op!(Slli,  [ Reg, Reg, Imm ]),
             "slri"            => op!(Slri,  [ Reg, Reg, Imm ]),
             "srai"            => op!(Srai,  [ Reg, Reg, Imm ]),

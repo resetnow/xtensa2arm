@@ -85,6 +85,8 @@ impl Translator {
             XtensaOpcode::L32i => "ldr",
             XtensaOpcode::L8ui => "ldrb",
             XtensaOpcode::S32i => "str",
+            XtensaOpcode::S8i => "strb",
+            XtensaOpcode::L16si => "ldrsh",
             _ => panic!()
         };
 
@@ -175,6 +177,21 @@ impl Translator {
         ( format!("b loc_{:x}", jt), jt )
     }
 
+    fn emit_addx(&self, instruction: &XtensaInstruction) -> String {
+        let shift = match instruction.opcode {
+            XtensaOpcode::Addx2 => 1,
+            XtensaOpcode::Addx4 => 2,
+            XtensaOpcode::Addx8 => 3,
+            _ => panic!()
+        };
+
+        let r1 = self.arm_reg(instruction.operands[0].get_reg());
+        let r2 = self.arm_reg(instruction.operands[1].get_reg());
+        let r3 = self.arm_reg(instruction.operands[2].get_reg());
+
+        format!("add {:}, {:}, {:}, lsl #{:}", r1, r3, r2, shift)
+    }
+
     fn translate_instruction(&mut self, i: &mut Instruction, xtensa_i: &XtensaInstruction,
             refs: &mut BTreeSet<u32>, pipe: &mut R2Pipe, objects: &mut ObjectStorage) {
         let op = match xtensa_i.opcode {
@@ -184,13 +201,18 @@ impl Translator {
             XtensaOpcode::Or => { self.emit_r3(xtensa_i) }
             XtensaOpcode::L32i |
             XtensaOpcode::S32i |
-            XtensaOpcode::L8ui => { self.emit_load_store(xtensa_i) }
+            XtensaOpcode::L8ui |
+            XtensaOpcode::S8i  |
+            XtensaOpcode::L16si => { self.emit_load_store(xtensa_i) }
             XtensaOpcode::Addi |
             XtensaOpcode::Slli |
             XtensaOpcode::Slri |
             XtensaOpcode::Srai => { self.emit_r2_i1(xtensa_i) }
             XtensaOpcode::Bbci |
             XtensaOpcode::Bbsi => { branch!(self.emit_branch_bit(xtensa_i), refs) }
+            XtensaOpcode::Addx2 |
+            XtensaOpcode::Addx4 |
+            XtensaOpcode::Addx8 => { self.emit_addx(xtensa_i) }
             XtensaOpcode::Jmp => { branch!(self.emit_jmp(xtensa_i), refs) }
             XtensaOpcode::L32r => { self.emit_load_relative(xtensa_i, pipe) }
             XtensaOpcode::Ret => { self.emit_ret() }
