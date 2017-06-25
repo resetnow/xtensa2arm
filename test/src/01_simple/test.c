@@ -1,5 +1,6 @@
 #include <test.h>
 
-void main() {
+int main() {
 	test_finish(true);
+	return 0;
 }

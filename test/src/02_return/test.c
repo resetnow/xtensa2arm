@@ -5,6 +5,7 @@ uint32_t f() {
 	return 0xaabbccdd;
 }
 
-void main() {
+int main() {
 	test_finish(f() == 0xaabbccdd);
+	return 0;
 }
